@@ -1,7 +1,5 @@
-require 'optparse'
 path = ::File.expand_path('..', __dir__)
-require "#{path}/merb-core/patches/optparse"
-require 'pry'
+require "#{path}/patches/custom_optparse"
 
 module Merb
   class Config
@@ -189,76 +187,76 @@ module Merb
 
         # Environment variables always win
         options[:environment] = ENV['MERB_ENV'] if ENV['MERB_ENV']
-
+        binding.pry
         # Build a parser for the command line arguments
-        opts = OptionParser.new do |parser|
-          parser.version = Merb::VERSION
+        opts = CustomOptionParser.new do |opts|
+          opts.version = Merb::VERSION
 
-          parser.banner = 'Usage: merb [uGdcIpPhmailLerkKX] [argument]'
-          parser.define_head 'Merb. Pocket rocket web framework'
-          parser.separator '*' * 80
-          parser.separator 'If no flags are given, Merb starts in the ' \
+          opts.banner = 'Usage: merb [uGdcIpPhmailLerkKX] [argument]'
+          opts.define_head 'Merb. Pocket rocket web framework'
+          opts.separator '*' * 80
+          opts.separator 'If no flags are given, Merb starts in the ' \
             'foreground on port 4000.'
-          parser.separator '*' * 80
+          opts.separator '*' * 80
 
-          parser.on('-u', '--user USER', 'This flag is for having merb run ' \
+          opts.on('-u', '--user USER', 'This flag is for having merb run ' \
                   'as a user other than the one currently logged in. Note: ' \
                   'if you set this you must also provide a --group option ' \
                   'for it to take effect.') do |user|
             options[:user] = user
           end
 
-          parser.on('-G', '--group GROUP', 'This flag is for having merb run ' \
+          opts.on('-G', '--group GROUP', 'This flag is for having merb run ' \
                   'as a group other than the one currently logged in. Note: ' \
                   'if you set this you must also provide a --user option ' \
                   'for it to take effect.') do |group|
             options[:group] = group
           end
 
-          parser.on('-d', '--daemonize', 'This will run a single merb in the ' \
+          opts.on('-d', '--daemonize', 'This will run a single merb in the ' \
                   'background.') do |_daemon|
             options[:daemonize] = true
           end
 
-          parser.on('-N', '--no-daemonize', 'This will allow you to run a ' \
+          opts.on('-N', '--no-daemonize', 'This will allow you to run a ' \
                   'cluster in console mode') do |_no_daemon|
             options[:daemonize] = false
           end
 
-          parser.on('-c', '--cluster-nodes NUM_MERBS', Integer,
-                    'Number of merb daemons to run.') do |nodes|
+          opts.on('-c', '--cluster-nodes NUM_MERBS', Integer,
+                  'Number of merb daemons to run.') do |nodes|
             options[:daemonize] = true unless options.key?(:daemonize)
             options[:cluster] = nodes
           end
 
-          parser.on('-I', '--init-file FILE', 'File to use for initialization ' \
+          opts.on('-I', '--init-file FILE', 'File to use for initialization ' \
                   'on load, defaults to config/init.rb') do |init_file|
             options[:init_file] = init_file
           end
 
-          parser.on('-p', '--port PORTNUM', Integer, 'Port to run merb on, ' \
+          opts.on('-p', '--port PORTNUM', Integer, 'Port to run merb on, ' \
                   'defaults to 4000.') do |port|
             options[:port] = port
           end
 
-          parser.on('-o', '--socket-file FILE', 'Socket file to run merb on, ' \
+          opts.on('-o', '--socket-file FILE', 'Socket file to run merb on, ' \
                   'defaults to [Merb.root]/log/merb.sock. This is for ' \
                   'web servers, like thin, that use sockets.' \
                   'Specify this *only* if you *must*.') do |port|
             options[:socket_file] = port
           end
 
-          parser.on('-s', '--socket SOCKNUM', Integer, 'Socket number to run ' \
+          opts.on('-s', '--socket SOCKNUM', Integer, 'Socket number to run ' \
                   'merb on, defaults to 0.') do |port|
             options[:socket] = port
           end
 
-          parser.on('-n', '--name NAME', String, 'Set the name of the application. '\
+          opts.on('-n', '--name NAME', String, 'Set the name of the application. '\
                   'This is used in the process title and log file names.') do |name|
             options[:name] = name
           end
 
-          parser.on('-P', '--pid PIDFILE', 'PID file, defaults to ' \
+          opts.on('-P', '--pid PIDFILE', 'PID file, defaults to ' \
                   '[Merb.root]/log/merb.main.pid for the master process and' \
                   '[Merb.root]/log/merb.[port number].pid for worker ' \
                   'processes. For clusters, use %s to specify where ' \
@@ -267,12 +265,12 @@ module Merb
             options[:pid_file] = pid_file
           end
 
-          parser.on('-h', '--host HOSTNAME', 'Host to bind to ' \
+          opts.on('-h', '--host HOSTNAME', 'Host to bind to ' \
                   '(default is 0.0.0.0).') do |host|
             options[:host] = host
           end
 
-          parser.on('-m', '--merb-root /path/to/approot', 'The path to the ' \
+          opts.on('-m', '--merb-root /path/to/approot', 'The path to the ' \
                   'Merb.root for the app you want to run ' \
                   '(default is current working directory).') do |root|
             options[:merb_root] = File.expand_path(root)
@@ -280,37 +278,37 @@ module Merb
 
           adapters = %i[mongrel emongrel thin ebb fastcgi webrick]
 
-          parser.on('-a', '--adapter ADAPTER',
-                    'The rack adapter to use to run merb (default is thin)' \
-                    "[#{adapters.join(', ')}]") do |adapter|
+          opts.on('-a', '--adapter ADAPTER',
+                  'The rack adapter to use to run merb (default is thin)' \
+                  "[#{adapters.join(', ')}]") do |adapter|
             options[:adapter] ||= adapter
           end
 
-          parser.on('-R', '--rackup FILE', 'Load an alternate Rack config ' \
+          opts.on('-R', '--rackup FILE', 'Load an alternate Rack config ' \
                   'file (default is config/rack.rb)') do |rackup|
             options[:rackup] = rackup
           end
 
-          parser.on('-i', '--irb-console', 'This flag will start merb in ' \
+          opts.on('-i', '--irb-console', 'This flag will start merb in ' \
                   'irb console mode. All your models and other classes will ' \
                   'be available for you in an irb session.') do |_console|
             options[:adapter] = 'irb'
           end
 
-          parser.on('-S', '--sandbox', 'This flag will enable a sandboxed irb ' \
+          opts.on('-S', '--sandbox', 'This flag will enable a sandboxed irb ' \
                   'console. If your ORM supports transactions, all edits will ' \
                   'be rolled back on exit.') do |_sandbox|
             options[:sandbox] = true
           end
 
-          parser.on('-l', '--log-level LEVEL', 'Log levels can be set to any of ' \
+          opts.on('-l', '--log-level LEVEL', 'Log levels can be set to any of ' \
                   'these options: debug < info < warn < error < ' \
                   'fatal (default is info)') do |log_level|
             options[:log_level] = log_level.to_sym
             options[:force_logging] = true
           end
 
-          parser.on('-L', '--log LOGFILE', 'A string representing the logfile to ' \
+          opts.on('-L', '--log LOGFILE', 'A string representing the logfile to ' \
                   'use. Defaults to [Merb.root]/log/merb.[main].log for the ' \
                   'master process and [Merb.root]/log/merb[port number].log' \
                   'for worker processes') do |log_file|
@@ -318,20 +316,20 @@ module Merb
             options[:force_logging] = true
           end
 
-          parser.on('-e', '--environment STRING', 'Environment to run Merb ' \
+          opts.on('-e', '--environment STRING', 'Environment to run Merb ' \
                   'under [development, production, testing] ' \
                   '(default is development)') do |env|
             options[:environment] = env
           end
 
-          parser.on('-r', "--script-runner ['RUBY CODE'| FULL_SCRIPT_PATH]",
-                    'Command-line option to run scripts and/or code in the ' \
-                    'merb app.') do |code_or_file|
+          opts.on('-r', "--script-runner ['RUBY CODE'| FULL_SCRIPT_PATH]",
+                  'Command-line option to run scripts and/or code in the ' \
+                  'merb app.') do |code_or_file|
             options[:runner_code] = code_or_file
             options[:adapter] = 'runner'
           end
 
-          parser.on('-K', '--graceful PORT or all', 'Gracefully kill one ' \
+          opts.on('-K', '--graceful PORT or all', 'Gracefully kill one ' \
                   'merb proceses by port number.  Use merb -K all to ' \
                   'gracefully kill all merbs.') do |ports|
             options[:action] = :kill
@@ -339,7 +337,7 @@ module Merb
             options[:port] = ports
           end
 
-          parser.on('-k', '--kill PORT', 'Force kill one merb worker ' \
+          opts.on('-k', '--kill PORT', 'Force kill one merb worker ' \
                   'by port number. This will cause the worker to' \
                   'be respawned.') do |port|
             options[:action] = :kill_9
@@ -347,19 +345,19 @@ module Merb
             options[:port] = port
           end
 
-          parser.on('--fast-deploy', 'Reload the code, but not your' \
+          opts.on('--fast-deploy', 'Reload the code, but not your' \
             'init.rb or gems') do
             options[:action] = :fast_deploy
           end
 
           # @todo Do we really need this flag? It seems unlikely to want to
           #   change the mutex from the command-line.
-          parser.on('-X', '--mutex on/off', 'This flag is for turning the ' \
+          opts.on('-X', '--mutex on/off', 'This flag is for turning the ' \
                   'mutex lock on and off.') do |mutex|
             options[:use_mutex] = !(mutex == 'off')
           end
 
-          parser.on('-D', '--debugger', 'Run merb using rDebug.') do
+          opts.on('-D', '--debugger', 'Run merb using rDebug.') do
             require 'ruby-debug'
             Debugger.start
 
@@ -377,15 +375,15 @@ module Merb
             exit
           end
 
-          parser.on('-V', '--verbose', 'Print extra information') do
+          opts.on('-V', '--verbose', 'Print extra information') do
             options[:verbose] = true
           end
 
-          parser.on('-C', '--console-trap', 'Enter an irb console on ^C') do
+          opts.on('-C', '--console-trap', 'Enter an irb console on ^C') do
             options[:console_trap] = true
           end
 
-          parser.on('-?', '-H', '--help', 'Show this help message') do
+          opts.on('-?', '-H', '--help', 'Show this help message') do
             puts opts
             exit
           end
@@ -393,8 +391,8 @@ module Merb
 
         # Parse what we have on the command line
         begin
-          opts.parse!(argv)
-        rescue OptionParser::InvalidOption => e
+          opts.parse(argv)
+        rescue CustomOptionParser::InvalidOption => e
           Merb.fatal! e.message, e
         end
         Merb::Config.setup(options)
