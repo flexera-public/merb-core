@@ -393,7 +393,7 @@ module Merb
 
         # Parse what we have on the command line
         begin
-          opts.parse!(argv)
+          opts.parse!(argv, into: nil)
         rescue OptionParser::InvalidOption => e
           Merb.fatal! e.message, e
         end
