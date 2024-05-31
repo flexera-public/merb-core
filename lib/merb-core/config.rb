@@ -1,7 +1,4 @@
 require 'optparse'
-path = ::File.expand_path('..', __dir__)
-require "#{path}/merb-core/patches/optparse"
-require 'pry'
 
 module Merb
   class Config
