@@ -75,7 +75,7 @@ module Erubis
   #   binding.
   #
   # :api: private
-  def self.load_yaml_file(file, binding)
+  def self.load_yaml_file(file, binding = nil)
     YAML.load(Erubis::MEruby.new(IO.read(File.expand_path(file))).result(binding))
   end
 end
