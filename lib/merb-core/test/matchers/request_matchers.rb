@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 Spec::Matchers.create(:be_successful, :respond_successfully) do
   matches do |rack|
     @status = rack.respond_to?(:status) ? rack.status : rack
@@ -106,7 +108,7 @@ Spec::Matchers.create(:redirect_to) do
     return false unless rack.headers["Location"]
     @location, @query = rack.headers["Location"].split("?")
     @status_code = status_code(rack)
-    @status_code.in?(300..399) && @location == location
+    (300..399).include?(@status_code) && @location == location
   end
   
   negative_failure_message do |rack, location|
@@ -115,12 +117,10 @@ Spec::Matchers.create(:redirect_to) do
   end
   
   failure_message do |rack, location|
-    if !rack.status.in?(300..399)
-      "Expected #{@inspect} to be a redirect, but " \
-      "it returned status code #{rack.status}."
+    if ! (300..399).include?(rack.status)
+      "Expected #{@inspect} to be a redirect, but it returned status code #{rack.status}."
     elsif rack.headers["Location"] != location
-      "Expected #{@inspect} to redirect to " \
-      "<#{location}>, but it redirected to <#{rack.headers["Location"]}>"
+      "Expected #{@inspect} to redirect to <#{location}>, but it redirected to <#{rack.headers["Location"]}>"
     end
   end
 end

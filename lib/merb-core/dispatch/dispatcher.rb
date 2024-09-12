@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 require Merb.framework_root / "merb-core" / "dispatch" / "default_exception" / "default_exception"
 
 module Merb
@@ -109,7 +111,7 @@ module Merb
     def dispatch_exception(exception)
       if(exception.is_a?(Merb::ControllerExceptions::Base) &&
          !exception.is_a?(Merb::ControllerExceptions::ServerError))
-        Merb.logger.info(Merb.exception(exception))
+        Merb.logger.info(Merb.exception(exception, false))
       else
         Merb.logger.error(Merb.exception(exception))
       end
@@ -120,7 +122,7 @@ module Merb
         e = exceptions.first
 
         if action_name = e.action_name
-          dispatch_action(Exceptions, action_name, e.class.status)
+          dispatch_action(::Exceptions, action_name, e.class.status)
         else
           dispatch_action(Dispatcher::DefaultException, :index, e.class.status)
         end

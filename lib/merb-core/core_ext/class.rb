@@ -1,8 +1,10 @@
+# encoding: UTF-8
+
 class Class
   # Allows the definition of methods on a class that will be available via
   # super.
-  # 
-  # ==== Examples
+  #
+  # @example
   #     class Foo
   #       chainable do
   #         def hello
@@ -17,15 +19,16 @@ class Class
   #       end
   #     end
   #
-  # Foo.new.hello #=> "hello Merb!"
-  # 
-  # ==== Parameters
-  # &blk:: 
-  #   a block containing method definitions that should be
+  #     Foo.new.hello #=> "hello Merb!"
+  #
+  # @param &blk A block containing method definitions that should be
   #   marked as chainable
   #
-  # ==== Returns
-  # Module:: The anonymous module that was created
+  # @return [Module] The anonymous module that was created.
+  #
+  # @note Taken from Extlib
+  # @deprecated
+  # @api private
   def chainable(&blk)
     mod = Module.new(&blk)
     include mod

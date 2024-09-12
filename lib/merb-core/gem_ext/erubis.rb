@@ -1,10 +1,12 @@
+# encoding: UTF-8
+
 require 'erubis'
 require 'yaml'
 module Erubis
   # This adds support for embedding the return value of a block call:
   #   <%= foo do %>...<% end =%>
   #
-  # :api: private
+  # @api private
   module Basic::Converter
     def convert_input(src, input)
       pat = @pattern
@@ -68,11 +70,9 @@ module Erubis
 
   # Loads a file, runs it through Erubis and parses it as YAML.
   #
-  # ===== Parameters
-  # file<String>:: The name of the file to load.
-  # binding<Binding>::
-  #   The binding to use when evaluating the ERB tags. Defaults to the current
-  #   binding.
+  # @param [String] file The name of the file to load.
+  # @param [Binding] binding
+  #   The binding to use when evaluating the ERB tags.
   #
   # :api: private
   def self.load_yaml_file(file, binding = nil)

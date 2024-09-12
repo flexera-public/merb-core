@@ -16,9 +16,7 @@ Gem::Specification.new do |gem|
   gem.description = 'Merb. Pocket rocket web framework.'
   gem.summary     = 'Merb plugin that provides caching (page, action, fragment, object)'
 
-  gem.has_rdoc = true 
   gem.require_paths = ['lib']
-  gem.extra_rdoc_files = ['README', 'LICENSE', 'TODO', 'CHANGELOG']
   gem.files = Dir[
     'CHANGELOG',
     'CONTRIBUTORS',
@@ -27,7 +25,7 @@ Gem::Specification.new do |gem|
     'README*',
     'Rakefile',
     'TODO*',
-    '{bin,lib,spec,spec10}/**/*',
+    '{bin,lib,spec,spec10,docs}/**/*',
   ] & `git ls-files -z`.split("\0")
 
     # Runtime dependencies
@@ -38,12 +36,14 @@ Gem::Specification.new do |gem|
     gem.add_dependency 'mime-types', '>= 1.16' # supports ruby-1.9
     gem.add_dependency 'bundler'
 
-    # Development dependencies
-    gem.add_development_dependency 'rspec',  '>= 1.2.9'
-    gem.add_development_dependency 'webrat', '>= 0.3.1'
+  # Development dependencies
+  gem.add_development_dependency 'rspec',  '>= 2.5'
+  gem.add_development_dependency 'webrat', '>= 0.7'
+  gem.add_development_dependency 'memcache-client', '>= 1.8.5' # for session specs
+  gem.add_development_dependency 'yard', '>= 0.6'
 
-    # Executable files
-    gem.executables  = 'merb'
+  # Executable files
+  gem.executables  = 'merb'
 
     # Requirements
     gem.requirements << 'Install the json gem to get faster json parsing.'

@@ -1,4 +1,6 @@
-require 'merb-core/core_ext'
+# encoding: UTF-8
+
+require 'merb-core/core_ext/kernel'
 require "merb-core/controller/exceptions"
 require "merb-core/controller/mixins/responder"
 require "merb-core/controller/mixins/render"

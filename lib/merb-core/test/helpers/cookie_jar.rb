@@ -1,13 +1,15 @@
+# encoding: UTF-8
+
 require 'uri'
 
 module Merb
   module Test
     class Cookie
       
-      # :api: private
+      # @api private
       attr_reader :name, :value
       
-      # :api: private
+      # @api private
       def initialize(raw, default_host)
         # separate the name / value pair from the cookie options
         @name_value_raw, options = raw.split(/[;,] */n, 2)
@@ -20,37 +22,37 @@ module Merb
         @options["domain"] ||= default_host
       end
       
-      # :api: private
+      # @api private
       def raw
         @name_value_raw
       end
       
-      # :api: private
+      # @api private
       def empty?
         @value.nil? || @value.empty?
       end
       
-      # :api: private
+      # @api private
       def domain
         @options["domain"]
       end
 
-      # :api: private
+      # @api private
       def path
         @options["path"] || "/"
       end
       
-      # :api: private
+      # @api private
       def expires
         Time.parse(@options["expires"]) if @options["expires"]
       end
       
-      # :api: private
+      # @api private
       def expired?
         expires && expires < Time.now
       end
       
-      # :api: private
+      # @api private
       def valid?(uri)
         domain_ = domain.index('.') == 0 ? domain[1..-1] : domain
         uri_path = uri.path.blank? ? "/" : uri.path
@@ -59,12 +61,12 @@ module Merb
         uri_path =~ Regexp.new("^#{Regexp.escape(path)}")
       end
       
-      # :api: private
+      # @api private
       def matches?(uri)
         ! expired? && valid?(uri)
       end
       
-      # :api: private
+      # @api private
       def <=>(other)
         # Orders the cookies from least specific to most
         [name, path, domain.reverse] <=> [other.name, other.path, other.domain.reverse]
@@ -74,17 +76,17 @@ module Merb
 
     class CookieJar
       
-      # :api: private
+      # @api private
       def initialize
         @jars = {}
       end
       
-      # :api: private
+      # @api private
       def update(jar, uri, raw_cookies)
         return unless raw_cookies
         # Initialize all the the received cookies
         cookies = []
-        raw_cookies.each do |raw|
+        raw_cookies.each_line do |raw|
           c = Cookie.new(raw, uri.host)
           cookies << c if c.valid?(uri)
         end
@@ -101,7 +103,7 @@ module Merb
         @jars[jar].sort!
       end
       
-      # :api: private
+      # @api private
       def for(jar, uri)
         cookies = {}
         

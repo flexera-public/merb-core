@@ -3,30 +3,30 @@ require File.join(File.dirname(__FILE__), "..", "..", "lib", "merb-core")
 module Merb
   class Request
     def self.query_parse(qs, d = '&;', preserve_order = false)
-      qh = preserve_order ? Dictionary.new : {}
+      qh = preserve_order ? ActiveSupport::OrderedHash.new : {}
       (qs||'').split(/[#{d}] */n).inject(qh) { |h,p| 
         key, value = unescape(p).split('=',2)
         normalize_params(h, key, value)
       }
-      preserve_order ? qh : qh.to_mash
+      preserve_order ? qh : qh.with_indifferent_access
     end
     
     def self.query_parse2(query_string, delimiter = '&;', preserve_order = false)
-      query = preserve_order ? Dictionary.new : {}
+      query = preserve_order ? ActiveSupport::OrderedHash.new : {}
       (query_string || '').split(/[#{delimiter}] */n).each do |pair|
         key, value = unescape(pair).split('=',2)
         normalize_params(query, key, value)
       end
-      preserve_order ? query : query.to_mash
+      preserve_order ? query : query.with_indifferent_access
     end
 
     def self.query_parse3(query_string, delimiter = '&;', preserve_order = false)
-      query = preserve_order ? Dictionary.new : {}
+      query = preserve_order ? ActiveSupport::OrderedHash.new : {}
       for pair in (query_string || '').split(/[#{delimiter}] */n)
         key, value = unescape(pair).split('=',2)
         normalize_params(query, key, value)
       end
-      preserve_order ? query : query.to_mash
+      preserve_order ? query : query.with_indifferent_access
     end
   end
 end

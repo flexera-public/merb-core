@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 begin
   require 'mongrel'
 rescue LoadError => e
@@ -14,7 +16,7 @@ module Merb
 
     class Mongrel < Merb::Rack::AbstractAdapter
 
-      # :api: plugin
+      # @api plugin
       def self.stop(status = 0)
         if @server
           begin
@@ -27,12 +29,12 @@ module Merb
         end
       end
 
-      # :api: plugin
+      # @api plugin
       def self.new_server(port)
         @server = ::Mongrel::HttpServer.new(@opts[:host], port)
       end
       
-      # :api: plugin
+      # @api plugin
       def self.start_server
         @server.register('/', ::Merb::Rack::Handler::Mongrel.new(@opts[:app]))
         @server.run.join

@@ -1,0 +1,56 @@
+# merb-core
+
+This is the 1.2 development branch of merb-core, providing core functionality
+for fast, simple, and powerful (web) application development.
+
+## Changes in 1.2
+
+Check the [1.2 wiki page](https://github.com/merb/merb/wiki/release-120)
+for changes.
+
+## Goals of this release
+
+  * Bring framework and application development up to speed with current
+    versions of supporting frameworks like Rack and RSpec.
+  * User documentation
+  * Integrate "interesting" functionality, e.g., CSRF protection.
+  * Simplify the API further
+
+## Using Merb
+
+To familiarize yourself with how a merb-core application might look, 
+use merb-gen to generate a few apps:
+
+    $ gem install merb-gen       # merb-gen is a gem of its own
+    $ merb-gen app myapp         # merb stack app, assuming you are using DM and RSpec
+
+The only option you can use with stack is `--template_engine=(erb|haml)`.
+Default is erb.
+
+    $ merb-gen core myapp        # a "regular" app without any predefined dependencies
+
+Options available:
+
+    --orm=datamapper
+    --orm=sequel
+    --orm=activerecord
+
+Default is no ORM.
+
+    --testing_framework=rspec
+    --testing_framework=test_unit
+
+Default is rspec.
+
+    --template_enging=erb
+    --template_enging=haml       # requires the "merb-haml" gem
+
+Default is erb.
+
+    $ merb-gen flat myapp        # a flattened app: one file and directory for views
+
+Options are same as for "regular" app.
+
+    $ merb-gen very_flat myapp   # a single-file app
+
+Options are same as for "regular" app.

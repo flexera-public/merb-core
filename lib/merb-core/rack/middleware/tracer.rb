@@ -1,8 +1,10 @@
+# encoding: UTF-8
+
 module Merb
   module Rack
     class Tracer < Merb::Rack::Middleware
 
-      # :api: plugin
+      # @api plugin
       def call(env)
 
         Merb.logger.debug!("Rack environment:\n" + env.inspect + "\n\n")

@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 require 'webrick'
 require 'webrick/utils'
 require 'rack/handler/webrick'
@@ -7,11 +9,11 @@ module Merb
     class WEBrick < Merb::Rack::AbstractAdapter
       
       class << self
-        # :api: private
+        # @api private
         attr_accessor :server
       end
 
-      # :api: plugin
+      # @api plugin
       def self.new_server(port)
         options = {
           :Port        => port,
@@ -28,14 +30,14 @@ module Merb
         @server.listeners.replace sockets
       end
 
-      # :api: plugin
+      # @api plugin
       def self.start_server
         @server.mount("/", ::Rack::Handler::WEBrick, @opts[:app])
         @server.start
         exit(@status)
       end
-      
-      # :api: plugin
+
+      # @api plugin
       def self.stop(status = 0)
         @status = status
         @server.shutdown

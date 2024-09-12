@@ -1,51 +1,54 @@
+# encoding: UTF-8
+
+require 'cgi'
+
 module Merb
   module Parse
-  
-    # ==== Parameters
-    # query_string<String>:: The query string.
-    # delimiter<String>:: The query string divider. Defaults to "&".
-    # preserve_order<Boolean>:: Preserve order of args. Defaults to false.
-    #
-    # ==== Returns
-    # Mash:: The parsed query string (Dictionary if preserve_order is set).
-    #
-    # ==== Examples
-    #   Merb::Parse.query("bar=nik&post[body]=heya")
-    #     # => { :bar => "nik", :post => { :body => "heya" } }
-    #
-    # :api: plugin
-    def self.query(query_string, delimiter = '&;', preserve_order = false)
-      query = preserve_order ? Dictionary.new : {}
-      for pair in (query_string || '').split(/[#{delimiter}] */n)
-        key, value = unescape(pair).split('=',2)
-        next if key.nil?
-        if key.include?('[')
-          normalize_params(query, key, value)
-        else
-          query[key] = value
-        end
-      end
-      preserve_order ? query : query.to_mash
-    end
 
     NAME_REGEX         = /Content-Disposition:.* name="?([^\";]*)"?/ni.freeze
     CONTENT_TYPE_REGEX = /Content-Type: (.*)\r\n/ni.freeze
     FILENAME_REGEX     = /Content-Disposition:.* filename="?([^\";]*)"?/ni.freeze
     CRLF               = "\r\n".freeze
     EOL                = CRLF
-  
-    # ==== Parameters
-    # request<IO>:: The raw request.
-    # boundary<String>:: The boundary string.
-    # content_length<Fixnum>:: The length of the content.
+
+    # "atom" (RFC 822).
+    # Printable 7-bit clean characters with some exceptions.
+    P_ATOM             = '[^\\x00-\\x20\\x22\\x28\\x29\\x2c\\x2e\\x3a-\\x3c' +
+                         '\\x3e\\x40\\x5b-\\x5d\\x7f-\\xff]+'.freeze
+
+    # "token" (RFC 2616).
+    # Almost like "atom", but for HTTP and with a different set of
+    # forbidden characters.
     #
-    # ==== Raises
-    # ControllerExceptions::MultiPartParseError:: Failed to parse request.
+    # @todo Write me
+    P_TOKEN            = '[^\\x00-\\x20]+'.freeze #TODO
+
+    # Parameter separator (RCF 822).
+    # Semicolon with optional surrounding space.
+    PARAM_SEP_REGEX    = /\A\s*(?:;\s*)?/
+
+    P_QTEXT            = '[^\\x0d\\x22\\x5c\\x80-\\xff]'
+    P_QUOTED_PAIR      = '\\x5c[\\x00-\\x7f]'
+
+    # Parameter (RFC 822).
+    PARAM_REGEX        = /\A(#{P_ATOM})=(?:(#{P_ATOM})|\x22((?:#{P_QTEXT}|#{P_QUOTED_PAIR})*)\x22)\x20*/n.freeze
+
+    # Encoded header (RFC 2047).
+    ENCHEADER_REGEX    = /\A=\?(#{P_ATOM})\?(#{P_ATOM})\?([^\x00-\x20\x3f\x7f-\xff]*)\?=\Z/n.freeze
+
+    # Parameter continuation numbering (RFC 2184)
+    PARAMCONT_REGEX    = /(.+)\*(\d+)\Z/.freeze
+
+    # @param [IO] request The raw request.
+    # @param [String] boundary The boundary string.
+    # @param [Fixnum] content_length The length of the content.
     #
-    # ==== Returns
-    # Hash:: The parsed request.
+    # @raise [ControllerExceptions::MultiPartParseError] Failed to parse
+    #   request.
     #
-    # :api: plugin
+    # @return [Hash] The parsed request.
+    #
+    # @api plugin
     def self.multipart(request, boundary, content_length)
       boundary = "--#{boundary}"
       paramhsh = {}
@@ -56,7 +59,7 @@ module Merb
       bufsize       = 16384
       content_length -= boundary_size
       key_memo = []
-      # status is boundary delimiter line
+      # status is boundary delimi.ter line
       status = input.read(boundary_size)
       return {} if status == nil || status.empty?
       raise ControllerExceptions::MultiPartParseError, "bad content body:\n'#{status}' should == '#{boundary + EOL}'"  unless status == boundary + EOL
@@ -84,9 +87,12 @@ module Merb
             name         = head[NAME_REGEX, 1]
 
             if filename && !filename.empty?
-              body = Tempfile.new(:Merb)
+              filename = decode_header_text(filename)
+              body = Tempfile.new('Merb')
               body.binmode if defined? body.binmode
             end
+
+            name = decode_header_text(name) if (name && !name.empty?)
             next
           end
 
@@ -141,17 +147,40 @@ module Merb
       paramhsh
     end
 
-    # ==== Parameters
-    # value<Array, Hash, Dictionary ~to_s>:: The value for the query string.
-    # prefix<~to_s>:: The prefix to add to the query string keys.
+    # @param [String] query_string The query string.
+    # @param [String] delimiter The query string divider.
+    # @param [Boolean] preserve_order Preserve order of args.
     #
-    # ==== Returns
-    # String:: The query string.
+    # @return [Mash] The parsed query string (ActiveSupport::Dictionary if
+    #   `preserve_order` is set).
     #
-    # ==== Alternatives
-    # If the value is a string, the prefix will be used as the key.
+    # @example
+    #   Merb::Parse.query("bar=nik&post[body]=heya")
+    #     # => { :bar => "nik", :post => { :body => "heya" } }
     #
-    # ==== Examples
+    # @api plugin
+    def self.query(query_string, delimiter = '&;', preserve_order = false)
+      query = preserve_order ? ActiveSupport::OrderedHash.new : {}
+      for pair in (query_string || '').split(/[#{delimiter}] */n)
+        key, value = unescape(pair).split('=',2)
+        next if key.nil?
+        if key.include?('[')
+          normalize_params(query, key, value)
+        else
+          query[key] = value
+        end
+      end
+      preserve_order ? query : query.with_indifferent_access
+    end
+
+    # @param [Array, Hash, ActiveSupport::OrderedHash #to_s] value The value for the
+    #   query string. If this is a string, the `prefix` will be used as
+    #   the key.
+    # @param [#to_s] prefix The prefix to add to the query string keys.
+    #
+    # @return [String] The query string.
+    #
+    # @example
     #   params_to_query_string(10, "page")
     #     # => "page=10"
     #   params_to_query_string({ :page => 10, :word => "ruby" })
@@ -161,14 +190,14 @@ module Merb
     #   params_to_query_string([ "ice-cream", "cake" ], "shopping_list")
     #     # => "shopping_list[]=ice-cream&shopping_list[]=cake"
     #
-    # :api: plugin
+    # @api plugin
     def self.params_to_query_string(value, prefix = nil)
       case value
       when Array
         value.map { |v|
           params_to_query_string(v, "#{prefix}[]")
         } * "&"
-      when Hash, Dictionary
+      when Hash, ActiveSupport::OrderedHash
         value.map { |k, v|
           params_to_query_string(v, prefix ? "#{prefix}[#{escape(k)}]" : escape(k))
         } * "&"
@@ -177,48 +206,43 @@ module Merb
       end
     end
 
-    # ==== Parameters
-    # s<String>:: String to URL escape.
+    # @param [String] s String to URL escape.
+    # @note The implementation accepts `#to_s` duck type parameters.
     #
-    # ==== returns
-    # String:: The escaped string.
+    # @return [String] The URL-escaped string.
     #
-    # :api: public
+    # @api public
     def self.escape(s)
       s.to_s.gsub(/([^ a-zA-Z0-9_.-]+)/n) {
         '%'+$1.unpack('H2'*$1.size).join('%').upcase
       }.tr(' ', '+')
     end
 
-    # ==== Parameter
-    # s<String>:: String to URL unescape.
-    # encoding<String>:: Encoding which we force to return. Only for 
-    #                    Ruby 1.9. If encoding is not passed it defaults
-    #                    to Encoding.default_internal. When this is nil
-    #                    (default) no encoding forcing is done.
+    # @param [String] s String to URL unescape.
+    # @param [String] encoding Encoding which we force to return. Only for
+    #   Ruby 1.9. If encoding is not passed it defaults to
+    #   Encoding.default_internal. When this is nil (default) no encoding
+    #   forcing is done.
     #
-    # ==== returns
-    # String:: The unescaped string.
+    # @return [String] The URL-unescaped string.
     #
-    # :api: public
+    # @api public
     def self.unescape(s, encoding = nil)
       s = s.tr('+', ' ').gsub(/((?:%[0-9a-fA-F]{2})+)/n){
         [$1.delete('%')].pack('H*')
       }
-      if RUBY_VERSION >= '1.9'
+      if s.respond_to?(:force_encoding)
         encoding ||= Encoding.default_internal
         s.force_encoding(encoding) if encoding
       end
       s
     end
 
-    # ==== Parameters
-    # s<String>:: String to XML escape.
+    # @param [String] s String to XML escape.
     #
-    # ==== returns
-    # String:: The escaped string.
+    # @return [String] The escaped string.
     #
-    # :api: public
+    # @api public
     def self.escape_xml(s)
       Erubis::XmlHelper.escape_xml(s)
     end
@@ -228,19 +252,25 @@ module Merb
     # Converts a query string snippet to a hash and adds it to existing
     # parameters.
     #
-    # ==== Parameters
-    # parms<Hash>:: Parameters to add the normalized parameters to.
-    # name<String>:: The key of the parameter to normalize.
-    # val<String>:: The value of the parameter.
+    # @note On encoding-aware Ruby VMs, this assumes that either
+    #   `Encoding.default_internal` is set or that query parameters are
+    #   UTF-8.
     #
-    # ==== Returns
-    # Hash:: Normalized parameters
+    # @param [Hash] parms Parameters to add the normalized parameters to.
+    # @param [String] name The key of the parameter to normalize.
+    # @param [String] val The value of the parameter.
     #
-    # :api: private
+    # @return [Hash] Normalized parameters.
+    #
+    # @api private
     def self.normalize_params(parms, name, val=nil)
       name =~ %r([\[\]]*([^\[\]]+)\]*)
       key = $1 || ''
       after = $' || ''
+
+      if val.respond_to?(:force_encoding)
+        val.force_encoding(Encoding.default_internal || 'utf-8')
+      end
 
       if after == ""
         parms[key] = val
@@ -259,7 +289,9 @@ module Merb
         parms[key] = normalize_params(parms[key], after, val)
       end
       parms
-    end  
-  
+    end
+
   end
 end
+
+require Pathname.new(File.dirname(__FILE__)).join('request_parsers', 'header')
