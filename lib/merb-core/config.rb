@@ -1,39 +1,34 @@
-# encoding: UTF-8
-
-require "optparse"
+require 'optparse'
 
 module Merb
-
   class Config
-
     class << self
-
-      # Get default config values for Merb.
+      # Returns the hash of default config values for Merb.
       #
       # @return [Hash] The defaults for the config.
       #
       # @api private
       def defaults
         @defaults ||= {
-          :host                   => "0.0.0.0",
-          :port                   => "4000",
-          :adapter                => "runner",
-          :reload_classes         => true,
-          :fork_for_class_load    => Merb.forking_environment?,
-          :environment            => "development",
-          :merb_root              => Dir.pwd,
-          :use_mutex              => true,
-          :log_delimiter          => " ~ ",
-          :log_auto_flush         => false,
-          :log_level              => :info,
-          :log_stream             => STDOUT,
-          :disabled_components    => Merb.on_windows? ? [:signals] : [],
-          :deferred_actions       => [],
-          :verbose                => false,
-          :name                   => "merb",
-          :kernel_dependencies    => true,
-          :gemfile                => nil,
-          :gemenv                 => nil
+          host: '0.0.0.0',
+          port: '4000',
+          adapter: 'runner',
+          reload_classes: true,
+          fork_for_class_load: Merb.forking_environment?,
+          environment: 'development',
+          merb_root: Dir.pwd,
+          use_mutex: true,
+          log_delimiter: ' ~ ',
+          log_auto_flush: false,
+          log_level: :info,
+          log_stream: STDOUT,
+          disabled_components: Merb.on_windows? ? [:signals] : [],
+          deferred_actions: [],
+          verbose: false,
+          name: 'merb',
+          kernel_dependencies: true,
+          gemfile: nil,
+          gemenv: nil
         }
       end
 
@@ -55,7 +50,7 @@ module Merb
         yield @configuration
         nil
       end
-      
+
       # Detects whether the provided key is in the config.
       #
       # @param [Object] key The key to check.
@@ -129,7 +124,7 @@ module Merb
       #
       # @api public
       def to_yaml
-        require "yaml"
+        require 'yaml'
         @configuration.to_yaml
       end
 
@@ -144,23 +139,17 @@ module Merb
       def setup(settings = {})
         # Merge new settings with any existing configuration settings
         settings = @configuration.merge(settings) unless @configuration.nil?
-        
+
         # Merge new settings with default settings
         config = defaults.merge(settings)
-        
-        unless config[:reload_classes]
-          config[:fork_for_class_load] = false
-        end
 
-        dev_mode = config[:environment] == "development"
-        unless config.key?(:reap_workers_quickly)
-          config[:reap_workers_quickly] = dev_mode & !config[:cluster]
-        end
-        
-        unless config.key?(:bind_fail_fatal)
-          config[:bind_fail_fatal] = dev_mode
-        end
-        
+        config[:fork_for_class_load] = false unless config[:reload_classes]
+
+        dev_mode = config[:environment] == 'development'
+        config[:reap_workers_quickly] = dev_mode & !config[:cluster] unless config.key?(:reap_workers_quickly)
+
+        config[:bind_fail_fatal] = dev_mode unless config.key?(:bind_fail_fatal)
+
         # Set mutex to dispatcher
         ::Merb::Dispatcher.use_mutex = config[:use_mutex]
 
@@ -180,212 +169,204 @@ module Merb
         options = {}
 
         # Environment variables always win
-        options[:environment] = ENV["MERB_ENV"] if ENV["MERB_ENV"]
+        options[:environment] = ENV['MERB_ENV'] if ENV['MERB_ENV']
 
         # Build a parser for the command line arguments
-        opts = OptionParser.new do |opts|
-          opts.version = Merb::VERSION
+        opts = OptionParser.new do |parser|
+          parser.version = Merb::VERSION
 
-          opts.banner = "Usage: merb [uGdcIpPhmailLerkKX] [argument]"
-          opts.define_head "Merb. Pocket rocket web framework"
-          opts.separator '*' * 80
-          opts.separator "If no flags are given, Merb starts in the " \
-            "foreground on port 4000."
-          opts.separator '*' * 80
+          parser.banner = 'Usage: merb [uGdcIpPhmailLerkKX] [argument]'
+          parser.define_head 'Merb. Pocket rocket web framework'
+          parser.separator '*' * 80
+          parser.separator 'If no flags are given, Merb starts in the ' \
+            'foreground on port 4000.'
+          parser.separator '*' * 80
 
-          opts.on("-u", "--user USER", "This flag is for having merb run " \
-                  "as a user other than the one currently logged in. Note: " \
-                  "if you set this you must also provide a --group option " \
-                  "for it to take effect.") do |user|
+          parser.on('-u', '--user USER', 'This flag is for having merb run ' \
+                  'as a user other than the one currently logged in. Note: ' \
+                  'if you set this you must also provide a --group option ' \
+                  'for it to take effect.') do |user|
             options[:user] = user
           end
 
-          opts.on("-G", "--group GROUP", "This flag is for having merb run " \
-                  "as a group other than the one currently logged in. Note: " \
-                  "if you set this you must also provide a --user option " \
-                  "for it to take effect.") do |group|
+          parser.on('-G', '--group GROUP', 'This flag is for having merb run ' \
+                  'as a group other than the one currently logged in. Note: ' \
+                  'if you set this you must also provide a --user option ' \
+                  'for it to take effect.') do |group|
             options[:group] = group
           end
 
-          opts.on("-d", "--daemonize", "This will run a single merb in the " \
-                  "background.") do |daemon|
+          parser.on('-d', '--daemonize', 'This will run a single merb in the ' \
+                  'background.') do |_daemon|
             options[:daemonize] = true
           end
 
-          opts.on("-N", "--no-daemonize", "This will allow you to run a " \
-                  "cluster in console mode") do |no_daemon|
+          parser.on('-N', '--no-daemonize', 'This will allow you to run a ' \
+                  'cluster in console mode') do |_no_daemon|
             options[:daemonize] = false
           end
 
-          opts.on("-c", "--cluster-nodes NUM_MERBS", Integer, 
-                  "Number of merb daemons to run.") do |nodes|
+          parser.on('-c', '--cluster-nodes NUM_MERBS', Integer,
+                    'Number of merb daemons to run.') do |nodes|
             options[:daemonize] = true unless options.key?(:daemonize)
             options[:cluster] = nodes
           end
 
-          opts.on("-I", "--init-file FILE", "File to use for initialization " \
-                  "on load, defaults to config/init.rb") do |init_file|
+          parser.on('-I', '--init-file FILE', 'File to use for initialization ' \
+                  'on load, defaults to config/init.rb') do |init_file|
             options[:init_file] = init_file
           end
 
-          opts.on("-p", "--port PORTNUM", Integer, "Port to run merb on, " \
-                  "defaults to 4000.") do |port|
+          parser.on('-p', '--port PORTNUM', Integer, 'Port to run merb on, ' \
+                  'defaults to 4000.') do |port|
             options[:port] = port
           end
 
-          opts.on("-o", "--socket-file FILE", "Socket file to run merb on, " \
-                  "defaults to [Merb.root]/log/merb.sock. This is for " \
-                  "web servers, like thin, that use sockets." \
-                  "Specify this *only* if you *must*.") do |port|
+          parser.on('-o', '--socket-file FILE', 'Socket file to run merb on, ' \
+                  'defaults to [Merb.root]/log/merb.sock. This is for ' \
+                  'web servers, like thin, that use sockets.' \
+                  'Specify this *only* if you *must*.') do |port|
             options[:socket_file] = port
           end
 
-          opts.on("-s", "--socket SOCKNUM", Integer, "Socket number to run " \
-                  "merb on, defaults to 0.") do |port|
+          parser.on('-s', '--socket SOCKNUM', Integer, 'Socket number to run ' \
+                  'merb on, defaults to 0.') do |port|
             options[:socket] = port
           end
 
-          opts.on("-n", "--name NAME", String, "Set the name of the application. "\
-                  "This is used in the process title and log file names.") do |name|
+          parser.on('-n', '--name NAME', String, 'Set the name of the application. '\
+                  'This is used in the process title and log file names.') do |name|
             options[:name] = name
           end
 
-          opts.on("-P", "--pid PIDFILE", "PID file, defaults to " \
-                  "[Merb.root]/log/merb.main.pid for the master process and" \
-                  "[Merb.root]/log/merb.[port number].pid for worker " \
-                  "processes. For clusters, use %s to specify where " \
-                  "in the file merb should place the port number. For " \
-                  "instance: -P myapp.%s.pid") do |pid_file|
+          parser.on('-P', '--pid PIDFILE', 'PID file, defaults to ' \
+                  '[Merb.root]/log/merb.main.pid for the master process and' \
+                  '[Merb.root]/log/merb.[port number].pid for worker ' \
+                  'processes. For clusters, use %s to specify where ' \
+                  'in the file merb should place the port number. For ' \
+                  'instance: -P myapp.%s.pid') do |pid_file|
             options[:pid_file] = pid_file
           end
 
-          opts.on("-h", "--host HOSTNAME", "Host to bind to " \
-                  "(default is 0.0.0.0).") do |host|
+          parser.on('-h', '--host HOSTNAME', 'Host to bind to ' \
+                  '(default is 0.0.0.0).') do |host|
             options[:host] = host
           end
 
-          opts.on("-m", "--merb-root /path/to/approot", "The path to the " \
-                  "Merb.root for the app you want to run " \
-                  "(default is current working directory).") do |root|
+          parser.on('-m', '--merb-root /path/to/approot', 'The path to the ' \
+                  'Merb.root for the app you want to run ' \
+                  '(default is current working directory).') do |root|
             options[:merb_root] = File.expand_path(root)
           end
 
-          adapters = [:mongrel, :emongrel, :thin, :ebb, :fastcgi, :webrick]
+          adapters = %i[mongrel emongrel thin ebb fastcgi webrick]
 
-          opts.on("-a", "--adapter ADAPTER",
-                  "The rack adapter to use to run merb (default is thin)" \
-                  "[#{adapters.join(', ')}]") do |adapter|
+          parser.on('-a', '--adapter ADAPTER',
+                    'The rack adapter to use to run merb (default is thin)' \
+                    "[#{adapters.join(', ')}]") do |adapter|
             options[:adapter] ||= adapter
           end
 
-          opts.on("-R", "--rackup FILE", "Load an alternate Rack config " \
-                  "file (default is config/rack.rb)") do |rackup|
+          parser.on('-R', '--rackup FILE', 'Load an alternate Rack config ' \
+                  'file (default is config/rack.rb)') do |rackup|
             options[:rackup] = rackup
           end
 
-          opts.on("-i", "--irb-console", "This flag will start merb in " \
-                  "irb console mode. All your models and other classes will " \
-                  "be available for you in an irb session.") do |console|
+          parser.on('-i', '--irb-console', 'This flag will start merb in ' \
+                  'irb console mode. All your models and other classes will ' \
+                  'be available for you in an irb session.') do |_console|
             options[:adapter] = 'irb'
           end
 
-          opts.on("-S", "--sandbox", "This flag will enable a sandboxed irb " \
-                  "console. If your ORM supports transactions, all edits will " \
-                  "be rolled back on exit.") do |sandbox|
+          parser.on('-S', '--sandbox', 'This flag will enable a sandboxed irb ' \
+                  'console. If your ORM supports transactions, all edits will ' \
+                  'be rolled back on exit.') do |_sandbox|
             options[:sandbox] = true
           end
 
-          opts.on("-l", "--log-level LEVEL", "Log levels can be set to any of " \
-                  "these options: debug < info < warn < error < " \
-                  "fatal (default is info)") do |log_level|
+          parser.on('-l', '--log-level LEVEL', 'Log levels can be set to any of ' \
+                  'these options: debug < info < warn < error < ' \
+                  'fatal (default is info)') do |log_level|
             options[:log_level] = log_level.to_sym
             options[:force_logging] = true
           end
 
-          opts.on("-L", "--log LOGFILE", "A string representing the logfile to " \
-                  "use. Defaults to [Merb.root]/log/merb.[main].log for the " \
-                  "master process and [Merb.root]/log/merb[port number].log" \
-                  "for worker processes") do |log_file|
+          parser.on('-L', '--log LOGFILE', 'A string representing the logfile to ' \
+                  'use. Defaults to [Merb.root]/log/merb.[main].log for the ' \
+                  'master process and [Merb.root]/log/merb[port number].log' \
+                  'for worker processes') do |log_file|
             options[:log_file] = log_file
             options[:force_logging] = true
           end
 
-          opts.on("-e", "--environment STRING", "Environment to run Merb " \
-                  "under [development, production, test] " \
-                  "(default is development)") do |env|
+          parser.on('-e', '--environment STRING', 'Environment to run Merb ' \
+                  'under [development, production, testing] ' \
+                  '(default is development)') do |env|
             options[:environment] = env
           end
 
-          opts.on("-r", "--script-runner ['RUBY CODE'| FULL_SCRIPT_PATH]",
-                  "Command-line option to run scripts and/or code in the " \
-                  "merb app.") do |code_or_file|
+          parser.on('-r', "--script-runner ['RUBY CODE'| FULL_SCRIPT_PATH]",
+                    'Command-line option to run scripts and/or code in the ' \
+                    'merb app.') do |code_or_file|
             options[:runner_code] = code_or_file
             options[:adapter] = 'runner'
           end
 
-          opts.on("-K", "--graceful PORT or all", "Gracefully kill one " \
-                  "merb proceses by port number.  Use merb -K all to " \
-                  "gracefully kill all merbs.") do |ports|
+          parser.on('-K', '--graceful PORT or all', 'Gracefully kill one ' \
+                  'merb proceses by port number.  Use merb -K all to ' \
+                  'gracefully kill all merbs.') do |ports|
             options[:action] = :kill
-            ports = "main" if ports == "all"
+            ports = 'main' if ports == 'all'
             options[:port] = ports
           end
 
-          opts.on("-k", "--kill PORT", "Force kill one merb worker " \
-                  "by port number. This will cause the worker to" \
-                  "be respawned.") do |port|
+          parser.on('-k', '--kill PORT', 'Force kill one merb worker ' \
+                  'by port number. This will cause the worker to' \
+                  'be respawned.') do |port|
             options[:action] = :kill_9
-            port = "main" if port == "all"
+            port = 'main' if port == 'all'
             options[:port] = port
           end
 
-          opts.on("--fast-deploy", "Reload the code, but not your" \
-            "init.rb or gems") do
-              options[:action] = :fast_deploy
+          parser.on('--fast-deploy', 'Reload the code, but not your' \
+            'init.rb or gems') do
+            options[:action] = :fast_deploy
           end
 
           # @todo Do we really need this flag? It seems unlikely to want to
           #   change the mutex from the command-line.
-          opts.on("-X", "--mutex on/off", "This flag is for turning the " \
-                  "mutex lock on and off.") do |mutex|
-            if mutex == "off"
-              options[:use_mutex] = false
-            else
-              options[:use_mutex] = true
-            end
+          parser.on('-X', '--mutex on/off', 'This flag is for turning the ' \
+                  'mutex lock on and off.') do |mutex|
+            options[:use_mutex] = !(mutex == 'off')
           end
 
-          opts.on("-D", "--debugger", "Run merb using rDebug.") do
-            begin
-              require "ruby-debug"
-              Debugger.start
+          parser.on('-D', '--debugger', 'Run merb using rDebug.') do
+            require 'ruby-debug'
+            Debugger.start
 
-              # Load up any .rdebugrc files we find
-              [".", ENV["HOME"], ENV["HOMEPATH"]].each do |script_dir|
-                script_file = "#{script_dir}/.rdebugrc"
-                Debugger.run_script script_file, StringIO.new if File.exists?(script_file)
-              end
-
-              if Debugger.respond_to?(:settings)
-                Debugger.settings[:autoeval] = true
-              end
-              puts "Debugger enabled"
-            rescue LoadError
-              puts "You need to install ruby-debug to run the server in " \
-                "debugging mode. With gems, use `gem install ruby-debug'"
-              exit
+            # Load up any .rdebugrc files we find
+            ['.', ENV['HOME'], ENV['HOMEPATH']].each do |script_dir|
+              script_file = "#{script_dir}/.rdebugrc"
+              Debugger.run_script script_file, StringIO.new if File.exist?(script_file)
             end
+
+            Debugger.settings[:autoeval] = true if Debugger.respond_to?(:settings)
+            puts 'Debugger enabled'
+          rescue LoadError
+            puts 'You need to install ruby-debug to run the server in ' \
+              "debugging mode. With gems, use `gem install ruby-debug'"
+            exit
           end
 
-          opts.on("-V", "--verbose", "Print extra information") do
+          parser.on('-V', '--verbose', 'Print extra information') do
             options[:verbose] = true
           end
 
-          opts.on("-C", "--console-trap", "Enter an irb console on ^C") do
+          parser.on('-C', '--console-trap', 'Enter an irb console on ^C') do
             options[:console_trap] = true
           end
 
-          opts.on("-?", "-H", "--help", "Show this help message") do
+          parser.on('-?', '-H', '--help', 'Show this help message') do
             puts opts
             exit
           end
@@ -393,7 +374,7 @@ module Merb
 
         # Parse what we have on the command line
         begin
-          opts.parse!(argv)
+          opts.parse!(argv, into: nil)
         rescue OptionParser::InvalidOption => e
           Merb.fatal! e.message, e
         end
@@ -434,17 +415,15 @@ module Merb
       #
       # @api public
       def method_missing(method, *args)
-        if method.to_s[-1,1] == '='
-          @configuration[method.to_s.tr('=','').to_sym] = *args
+        if method.to_s[-1, 1] == '='
+          @configuration[method.to_s.tr('=', '').to_sym] = *args
         else
           @configuration[method]
         end
       end
-
     end # class << self
 
     class ConfigBlock
-
       # Evaluates the provided block, where any call to a method causes
       # \#[]= to be called on klass with the method name as the key and
       # the arguments as the value.
@@ -466,9 +445,6 @@ module Merb
       def method_missing(method, *args)
         @klass[method] = *args
       end
-
     end # class Configurator
-
   end # Config
-
 end # Merb

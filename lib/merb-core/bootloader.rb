@@ -346,6 +346,7 @@ class Merb::BootLoader::Dependencies < Merb::BootLoader
   # @deprecated
   def self.run
     set_encoding
+    load_dependencies
     unless Merb::disabled?(:initfile)
       load_initfile
       load_env_config
@@ -353,6 +354,28 @@ class Merb::BootLoader::Dependencies < Merb::BootLoader
     expand_ruby_path
     enable_json_gem unless Merb::disabled?(:json)
     update_logger
+    nil
+  end
+  
+  # Try to load the gem environment file (set via Merb::Config[:gemenv])
+  # defaults to ./gems/environment
+  #
+  # Load each the dependencies defined in the Merb::Config[:gemfile] 
+  # using the bundler gem's Bundler::require_env
+  # 
+  # Falls back to rubygems if no bundler environment exists
+  # 
+  # ==== Returns
+  # nil
+  #
+  # :api: private
+  def self.load_dependencies
+    begin
+      Bundler.require(:default, Merb.environment.to_sym)
+    rescue Bundler::GemfileNotFound
+      Merb.logger.error! "No Gemfile found! If you're generating new app with merb-gen " \
+                         "this is fine, otherwise run: bundle init to create Gemfile"
+    end
     nil
   end
   
