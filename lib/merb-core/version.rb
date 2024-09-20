@@ -1,3 +1,3 @@
 module Merb
-  VERSION = '1.1.2'.freeze
+  VERSION = '1.1.21'.freeze
 end
